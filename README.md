@@ -1,7 +1,12 @@
-# sv_devops
+# Pre-requirement
 
-- easy all-in one installation script
-- nginx https web server installation scripts [deprecated]
-- db backup and restore scripts
+*Third-party software*
+* Docker
+* Docker compose (V2)
 
-**use docker compose v2**
+*SecurityVision installer (containerized)*
+* redist folder (unpack and put in root folder of this project)
+
+# Deployment
+
+* Start deployment with `./deploy.sh` command
