@@ -1,0 +1,291 @@
+version: '3.8'
+
+volumes:
+  sv5_db_v:
+  sv5_elastic_v:
+  sv5_rabbit_v:
+
+networks:
+  sv5_net:
+
+services:
+  sv5_database:
+    image: sv5_database:${tag}
+    environment:
+      POSTGRES_DB: ${db_name}
+      POSTGRES_USER: ${db_user}
+      POSTGRES_PASSWORD: ${db_password}
+    networks:
+      - sv5_net
+    ports:
+      - "${db_external_port}:5432"
+    volumes:
+      - sv5_db_v:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: pg_isready -U ${db_user} -d ${db_name}
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  sv5_elastic:
+    image: sv5_elastic:${tag}
+    networks:
+      - sv5_net
+    volumes:
+      - sv5_elastic_v:/usr/share/elasticsearch/data
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s http://localhost:9200 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  sv5_rabbit:
+    image: sv5_rabbit:${tag}
+    environment:
+      - RABBITMQ_DEFAULT_USER=${rabbit_user}
+      - RABBITMQ_DEFAULT_PASS=${rabbit_pwd}
+    networks:
+      - sv5_net
+    volumes:
+      - sv5_rabbit_v:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  sv5_client:
+    image: sv5_client:${tag}
+    depends_on:
+      sv5_api:
+        condition: service_healthy
+      sv5_webapi:
+        condition: service_healthy
+      sv5_processing:
+        condition: service_healthy
+      sv5_collector:
+        condition: service_healthy
+      sv5_reporting:
+        condition: service_healthy
+      sv5_notifications:
+        condition: service_healthy
+      sv5_connectors:
+        condition: service_healthy
+    environment:
+      - CLIENT_PORT=8443
+      - WEB_API_NODE=sv5_webapi
+      - WEB_API_PORT=9090
+      - API_NODE=sv5_api
+      - API_PORT=9810
+    networks:
+      - sv5_net
+    ports:
+      - ${client_external_port}:8443
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s -k https://localhost:8443 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    
+  sv5_webapi:
+    image: sv5_webapi:${tag}
+    hostname: ${hostname}
+    depends_on:
+      sv5_database:
+        condition: service_healthy
+      sv5_elastic:
+        condition: service_healthy
+      sv5_rabbit:
+        condition: service_healthy
+    environment:
+    # to pass <$> sign use <$$> instead
+      - DB_SERVER=${db_server}
+      - DB_NAME=${db_name}
+      - DB_USERNAME=${db_user}
+      - DB_PASSWORD=${db_password}
+      - DB_PORT=${db_port}
+      - PROXY_PORT=9090
+      - ELASTIC_SERVER=${elastic_server}
+      - ELASTIC_PORT=${elastic_port}
+      - RABBITMQ_SERVER=${rabbit_server}
+      - RABBITMQ_USER=${rabbit_user}
+      - RABBITMQ_PASSWORD=${rabbit_pwd}
+      - RABBITMQ_PORT=${rabbit_port}
+    networks:
+      - sv5_net
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s http://localhost:9090 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  sv5_api:
+    image: sv5_api:${tag}
+    depends_on:
+      sv5_database:
+        condition: service_healthy
+      sv5_webapi:
+        condition: service_healthy
+    environment:
+    # to pass <$> sign use <$$> instead
+      - DB_SERVER=${db_server}
+      - DB_NAME=${db_name}
+      - DB_USERNAME=${db_user}
+      - DB_PASSWORD=${db_password}
+      - DB_PORT=${db_port}
+      - PROXY_PORT=9810
+      - WEB_API_NODE=sv5_webapi
+      - WEB_API_PORT=9090
+    networks:
+      - sv5_net
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s http://localhost:9810 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  sv5_processing:
+    image: sv5_processing:${tag}
+    depends_on:
+      sv5_database:
+        condition: service_healthy
+      sv5_webapi:
+        condition: service_healthy
+      sv5_rabbit:
+        condition: service_healthy
+    environment:
+    # to pass <$> sign use <$$> instead
+      - DB_SERVER=${db_server}
+      - DB_NAME=${db_name}
+      - DB_USERNAME=${db_user}
+      - DB_PASSWORD=${db_password}
+      - DB_PORT=${db_port}
+      - PROXY_PORT=9410
+      - RABBITMQ_SERVER=${rabbit_server}
+      - RABBITMQ_USER=${rabbit_user}
+      - RABBITMQ_PASSWORD=${rabbit_pwd}
+      - RABBITMQ_PORT=${rabbit_port}
+    networks:
+      - sv5_net
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s http://localhost:9410 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  sv5_collector:
+    image: sv5_collector:${tag}
+    depends_on:
+      sv5_database:
+        condition: service_healthy
+      sv5_elastic:
+        condition: service_healthy
+      sv5_rabbit:
+        condition: service_healthy
+      sv5_api:
+        condition: service_healthy
+      sv5_webapi:
+        condition: service_healthy
+    environment:
+    # to pass <$> sign use <$$> instead
+      - DB_SERVER=${db_server}
+      - DB_NAME=${db_name}
+      - DB_USERNAME=${db_user}
+      - DB_PASSWORD=${db_password}
+      - DB_PORT=${db_port}
+      - PROXY_PORT=9510
+      - ELASTIC_SERVER=${elastic_server}
+      - ELASTIC_PORT=${elastic_port}
+      - RABBITMQ_SERVER=${rabbit_server}
+      - RABBITMQ_USER=${rabbit_user}
+      - RABBITMQ_PASSWORD=${rabbit_pwd}
+      - RABBITMQ_PORT=${rabbit_port}
+    networks:
+      - sv5_net
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s -k http://localhost:9510 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    
+  sv5_reporting:
+    image: sv5_reporting:${tag}
+    depends_on:
+      sv5_database:
+        condition: service_healthy
+      sv5_webapi:
+        condition: service_healthy
+    environment:
+    # to pass <$> sign use <$$> instead
+      - DB_SERVER=${db_server}
+      - DB_NAME=${db_name}
+      - DB_USERNAME=${db_user}
+      - DB_PASSWORD=${db_password}
+      - DB_PORT=${db_port}
+      - PROXY_PORT=9710
+    networks:
+      - sv5_net
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s http://localhost:9710 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  sv5_notifications:
+    image: sv5_notifications:${tag}
+    depends_on:
+      sv5_database:
+        condition: service_healthy
+      sv5_webapi:
+        condition: service_healthy
+    environment:
+    # to pass <$> sign use <$$> instead
+      - DB_SERVER=${db_server}
+      - DB_NAME=${db_name}
+      - DB_USERNAME=${db_user}
+      - DB_PASSWORD=${db_password}
+      - DB_PORT=${db_port}
+      - PROXY_PORT=9610
+    networks:
+      - sv5_net
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s http://localhost:9610 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  sv5_connectors:
+    image: sv5_connectors:${tag}
+    depends_on:
+      sv5_webapi:
+        condition: service_healthy
+      sv5_collector:
+        condition: service_healthy
+    environment:
+    # to pass <$> sign use <$$> instead
+      - DB_SERVER=${db_server}
+      - DB_NAME=${db_name}
+      - DB_USERNAME=${db_user}
+      - DB_PASSWORD=${db_password}
+      - DB_PORT=${db_port}
+      - PROXY_PORT=9210
+    networks:
+      - sv5_net
+    ports:
+      - 8109:9210
+    restart: unless-stopped
+    healthcheck:
+      test: curl -s http://localhost:9210 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
