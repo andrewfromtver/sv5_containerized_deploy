@@ -70,7 +70,7 @@ echo ""
 echo "-----------------------------------------------"
 echo "---------- Loading docker images ... ----------"
 echo "-----------------------------------------------"
-# docker load -i ./sv5_images.tar.gz
+docker load -i ./sv5_images.tar.gz
 echo "-----------------------------------------------"
 
 # get IP & hostname
