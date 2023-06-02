@@ -5,7 +5,7 @@
 * Docker compose (V2)
 
 *SecurityVision installer (containerized)*
-* redist folder (unpack and put in root folder of this project)
+* sv5_images.tar.gz (put in root folder of this project)
 
 # Deployment
 
