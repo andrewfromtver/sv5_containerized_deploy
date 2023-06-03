@@ -114,7 +114,7 @@ cp ./docker-compose_prod_params.yml ./docker-compose.yml
 
 # start project
 echo ""
-docker compose -p demolab up -d --wait sv5_client
+docker compose -p sv5platform up -d --wait sv5_client
 
 # show web-ui url
 echo ""
@@ -127,7 +127,7 @@ echo "-----------------------------------------------"
 
 # check project nodes status
 echo ""
-docker compose -p demolab ps
+docker compose -p sv5platform ps
 
 # docker exec -it -u 0 $(docker ps | grep sv5_connectors | cut -d ' ' -f 1) apt install -y dnsutils kinit
 

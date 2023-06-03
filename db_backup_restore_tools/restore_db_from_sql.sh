@@ -8,10 +8,10 @@ DB_USER=$(cat .env | grep db_user | cut -d "=" -f 2)
 DB_NAME=$(cat .env | grep db_name | cut -d "=" -f 2)
 
 # stop project
-docker compose -p demolab stop
+docker compose -p sv5platform stop
 
 # start db node only
-docker compose -p demolab start sv5_database
+docker compose -p sv5platform start sv5_database
 
 # create dir for log file (if not exists)
 mkdir -p sv5db_backups
@@ -22,7 +22,7 @@ cat $1 | docker exec -i \
     psql -U $DB_USER -d $DB_NAME 2>&1 | tee sv5db_backups/db_restore_`date +%d-%m-%Y"_"%H_%M_%S`.log
 
 # up project
-docker compose -p demolab up -d --wait sv5_client
+docker compose -p sv5platform up -d --wait sv5_client
 
 # simple errors handler mode off
 set +e
