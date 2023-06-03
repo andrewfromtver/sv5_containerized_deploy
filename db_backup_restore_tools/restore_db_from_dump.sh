@@ -13,11 +13,15 @@ docker compose -p sv5platform stop
 # start db node only
 docker compose -p sv5platform start sv5_database
 
-# restore from backup
-echo 'DROP DATABASE IF EXISTS "$DB_NAME"; CREATE DATABASE "$DB_NAME";' | docker exec -i \
+# clear database
+echo "DROP DATABASE IF EXISTS \"$DB_NAME\"; CREATE DATABASE \"$DB_NAME\";" | docker exec -i \
     $(docker ps | grep sv5_databas[e] | cut -d " " -f 1) \
     psql -U $DB_USER
+
+# copy dump to container
 docker cp $1 $(docker ps | grep sv5_databas[e] | cut -d " " -f 1):/var/lib/postgresql/data/bakup.dump
+
+# restore database from backup
 docker exec -i \
     $(docker ps | grep sv5_databas[e] | cut -d " " -f 1) \
     pg_restore -U $DB_USER -d $DB_NAME -v -Fc /var/lib/postgresql/data/bakup.dump
