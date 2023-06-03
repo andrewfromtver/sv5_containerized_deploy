@@ -279,6 +279,8 @@ services:
       - DB_PASSWORD=${db_password}
       - DB_PORT=${db_port}
       - PROXY_PORT=9210
+    volumes:
+      - ./shared:/shared
     networks:
       - sv5_net
     ports:

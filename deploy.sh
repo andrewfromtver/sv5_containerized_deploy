@@ -108,7 +108,8 @@ echo "-----------------------------------------------"
 cat ./.env
 echo "-----------------------------------------------"
 
-# prepare docker-compose file
+# prepare docker-compose file & shared folder
+mkdir -p ./shared
 cp ./docker-compose_prod_params.yml ./docker-compose.yml
 
 # start project
