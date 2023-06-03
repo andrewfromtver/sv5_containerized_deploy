@@ -16,7 +16,12 @@ docker compose -p sv5platform start sv5_database
 # create dir for log file (if not exists)
 mkdir -p sv5db_backups
 
-# restore from backup
+# clear database
+echo "DROP DATABASE IF EXISTS \"$DB_NAME\"; CREATE DATABASE \"$DB_NAME\";" | docker exec -i \
+    $(docker ps | grep sv5_databas[e] | cut -d " " -f 1) \
+    psql -U $DB_USER
+
+# restore database from backup
 cat $1 | docker exec -i \
     $(docker ps | grep sv5_databas[e] | cut -d " " -f 1) \
     psql -U $DB_USER -d $DB_NAME 2>&1 | tee sv5db_backups/db_restore_`date +%d-%m-%Y"_"%H_%M_%S`.log
