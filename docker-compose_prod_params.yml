@@ -189,8 +189,6 @@ services:
         condition: service_healthy
       sv5_rabbit:
         condition: service_healthy
-      sv5_api:
-        condition: service_healthy
       sv5_webapi:
         condition: service_healthy
     environment:
